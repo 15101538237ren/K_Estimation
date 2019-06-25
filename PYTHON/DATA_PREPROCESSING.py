@@ -2,6 +2,12 @@
 
 import os, re
 import numpy as np
+import scipy.io as sio
+
+NUMBER_OF_REPLICATES = [2, 3, 3, 3] # number of replicates at 0, 1, 4, 16
+TIME_POINTS = ['0h', '1h', '4h', '16h']
+CHROMOSOMES = [str(i) for i in range(1, 23)]
+CHROMOSOMES.extend(['X', 'Y'])
 
 def dividing_data_randomly(input_fp, out_fp1, out_fp2, sep="\s+",line_end = "\n", p =0.5):
     '''
@@ -50,12 +56,76 @@ def dividing_data_randomly(input_fp, out_fp1, out_fp2, sep="\s+",line_end = "\n"
         out_file.write((line_end).join(ltws1))
         out_file.write(line_end)
     with open(out_fp2, "w") as out_file:
-        out_file.write((line_end).join(ltws1))
+        out_file.write((line_end).join(ltws2))
         out_file.write(line_end)
     print('Split %s successful' % input_fp)
 
-if __name__ == "__main__":
-    input_fp = '../DATA/Repli_BS/HUES64_WT_AllCells_1hBrdU_0Chase_nascent_rep1_3_merged.bed'
-    out_put_fp1 = '../DATA/Repli_BS/OTHER_DATA/HUES64_WT_AllCells_1hBrdU_0Chase_nascent_random_split_rep1.bed'
-    out_put_fp2 = '../DATA/Repli_BS/OTHER_DATA/HUES64_WT_AllCells_1hBrdU_0Chase_nascent_random_split_rep3.bed'
+def dividing_data_test():
+    input_fp = '../DATA/Repli_BS/OTHER_DATA/HUES64_WT_AllCells_1hBrdU_0Chase_nascent_rep1_3_merged.bed'
+    out_put_fp1 = '../DATA/Repli_BS/0h_rep1.bed'
+    out_put_fp2 = '../DATA/Repli_BS/0h_rep2.bed'
     dividing_data_randomly(input_fp, out_put_fp1, out_put_fp2)
+
+def prepare_matlab_format_data_for_mle(input_dir, output_dir, combination_indexs, sep="\s+",line_end = "\n"):
+
+    for c_idx, combination_index in enumerate(combination_indexs):
+        out_subdir = os.path.join(output_dir, str(c_idx + 1))
+        if not os.path.exists(out_subdir):
+            os.makedirs(out_subdir)
+        for chromosome in CHROMOSOMES:
+            sites = []  # the list to store cpg sites
+            mat_data = []
+            for t_idx, time_point in enumerate(TIME_POINTS):
+                repli_name = time_point + '_' + combination_index
+
+                input_file_path = os.path.join(input_dir, repli_name, 'chr' + chromosome + '.bed')
+                print("processing %s" % input_file_path)
+
+                line_idx = 0
+                with open(input_file_path, "r") as input_file:
+                    line = input_file.readline()
+                    while line:
+                        line_contents = re.split(sep, line.strip(line_end))
+                        chr_i, start, end, methy_reads, unmethy_reads = line_contents
+                        methy_reads = int(methy_reads)
+                        unmethy_reads = int(unmethy_reads)
+                        if t_idx == 0:
+                            sites.append(int(start))
+                            data_arr = np.zeros((len(TIME_POINTS), 2))
+                            mat_data.append(data_arr)
+
+                        mat_data[line_idx][t_idx][0] = methy_reads
+                        mat_data[line_idx][t_idx][1] = unmethy_reads
+                        line = input_file.readline()
+                        line_idx += 1
+            mat_data = np.array(mat_data)
+            MAT_DICT = {'AllDat': mat_data, 'sites': sites}
+            sio.savemat(os.path.join(out_subdir, 'chr' + chromosome + '.mat'), MAT_DICT)
+def combine_replicates(input_dir, output_dir):
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
+    combination_pairs = []
+    idx = 1
+    combination_index_fp = os.path.join(output_dir, 'INDEX_OF_COMBINATION.txt')
+    header = '\t'.join(['idx', '0h', '1h', '4h', '16h'])
+    ltws = [header]
+    for i in range(1, NUMBER_OF_REPLICATES[0] + 1): # 0h
+        for j in range(1, NUMBER_OF_REPLICATES[1] + 1): # 1h
+            for k in range(1, NUMBER_OF_REPLICATES[2] + 1): # 4h
+                for l in range(1, NUMBER_OF_REPLICATES[3] + 1): #16h
+                    arr =['rep' + str(item) for item in [i, j, k, l]]
+                    combination_pairs.append(arr)
+                    ltws.append('\t'.join([str(item) for item in [idx, i, j, k, l]]))
+                    idx += 1
+
+    with open(combination_index_fp, "w") as combination_index_file:
+        content_to_write = '\n'.join(ltws)
+        combination_index_file.write(content_to_write)
+        combination_index_file.write('\n')
+    for combination_indexs in combination_pairs:
+        prepare_matlab_format_data_for_mle(input_dir, output_dir, combination_indexs)
+if __name__ == "__main__":
+    input_dir = '../DATA/Repli_BS/TMP'
+    output_dir = '../DATA/Repli_BS/MATLAB_DATA'
+    combine_replicates(input_dir, output_dir)
