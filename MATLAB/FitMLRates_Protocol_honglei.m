@@ -47,7 +47,7 @@ for ii=1:numsites %loop over the sites
     if (ii-counter*SaveEvery)/SaveEvery >= 1
         save ii ii
         counter=counter+1;
-        save(ratefilename,'FitSites','MLELam','MLEFrac')
+        save(out_fp,'FitSites','MLELam','MLEFrac')
         toc
     end
     
@@ -124,6 +124,8 @@ for ii=1:numsites %loop over the sites
     end
     FitSites(ii)=sites(KeepSites(ii));
 end
-save(ratefilename,'FitSites','MLELam','MLEFrac')
+save(out_fp,'FitSites','MLELam','MLEFrac')
 toc
 end
+
+histogram(log10(MLELam(:, 1)), 'normalization', 'pdf');

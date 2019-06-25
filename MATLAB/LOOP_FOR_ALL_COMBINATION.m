@@ -1,8 +1,8 @@
-comb_size = 54;
-chr_size = 22;
-DATA_DIR = '../DATA/TEST/MATLAB_DATA/';
+comb_size = 1;
+chr_size = 1;
+DATA_DIR = '../DATA/Repli_BS/MATLAB_DATA/';
 
-OUT_DIR = '../DATA/TEST/K_RATES/';
+OUT_DIR = '../DATA/Repli_BS/K_RATES/';
 if ~exist(OUT_DIR)
     mkdir(OUT_DIR);
 end
