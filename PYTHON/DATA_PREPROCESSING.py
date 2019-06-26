@@ -3,11 +3,22 @@
 import os, re
 import numpy as np
 import scipy.io as sio
+import multiprocessing as mp
+import pandas as pd
 
 NUMBER_OF_REPLICATES = [2, 3, 3, 3] # number of replicates at 0, 1, 4, 16
 TIME_POINTS = ['0h', '1h', '4h', '16h']
 CHROMOSOMES = [str(i) for i in range(1, 23)]
 CHROMOSOMES.extend(['X', 'Y'])
+
+def _workers_count():
+    cpu_count = 1
+    try:
+        cpu_count = len(os.sched_getaffinity(0))
+    except AttributeError:
+        cpu_count = os.cpu_count()
+    return cpu_count
+
 
 def dividing_data_randomly(input_fp, out_fp1, out_fp2, sep="\s+",line_end = "\n", p =0.5):
     '''
@@ -75,7 +86,7 @@ def prepare_matlab_format_data_for_mle(input_dir, output_dir, comb_index, combin
         sites = []  # the list to store cpg sites
         mat_data = []
         for t_idx, time_point in enumerate(TIME_POINTS):
-            repli_name = time_point + '_' + combination_indexs[t_idx]
+            repli_name = time_point + '_' + 'rep' + str(combination_indexs[t_idx])
 
             input_file_path = os.path.join(input_dir, repli_name, 'chr' + chromosome + '.bed')
             print("processing comb_idx: %d %s" % (comb_index, input_file_path))
@@ -100,11 +111,15 @@ def prepare_matlab_format_data_for_mle(input_dir, output_dir, comb_index, combin
         mat_data = np.array(mat_data)
         MAT_DICT = {'AllDat': mat_data, 'sites': sites}
         sio.savemat(os.path.join(out_subdir, 'chr' + chromosome + '.mat'), MAT_DICT)
+def wrapper(row):
+    comb_index= row[0]
+    combination_indexs = list(row[1:5])
+    prepare_matlab_format_data_for_mle(input_dir, output_dir, comb_index, combination_indexs)
 def combine_replicates(input_dir, output_dir):
+
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
-    combination_pairs = []
     idx = 1
     combination_index_fp = os.path.join(output_dir, 'INDEX_OF_COMBINATION.txt')
     header = '\t'.join(['idx', '0h', '1h', '4h', '16h'])
@@ -113,8 +128,6 @@ def combine_replicates(input_dir, output_dir):
         for j in range(1, NUMBER_OF_REPLICATES[1] + 1): # 1h
             for k in range(1, NUMBER_OF_REPLICATES[2] + 1): # 4h
                 for l in range(1, NUMBER_OF_REPLICATES[3] + 1): #16h
-                    arr =['rep' + str(item) for item in [i, j, k, l]]
-                    combination_pairs.append(arr)
                     ltws.append('\t'.join([str(item) for item in [idx, i, j, k, l]]))
                     idx += 1
 
@@ -122,9 +135,14 @@ def combine_replicates(input_dir, output_dir):
         content_to_write = '\n'.join(ltws)
         combination_index_file.write(content_to_write)
         combination_index_file.write('\n')
-    for comb_index, combination_indexs in enumerate(combination_pairs):
-        if comb_index >= 7 and comb_index != 40:
-            prepare_matlab_format_data_for_mle(input_dir, output_dir, comb_index + 1, combination_indexs)
+
+    num_workers = _workers_count()
+    # Initiating pool
+    print('Starting pool with', num_workers, 'workers')
+    parametersDF = pd.read_csv('INDEX_OF_COMBINATION.txt', index_col=0, lineterminator='\n')
+    tups = parametersDF.itertuples(name=None)
+    pool = mp.Pool(processes=num_workers)
+    pool.map_async(wrapper, tups).get()
 if __name__ == "__main__":
     input_dir = '../DATA/Repli_BS/TMP'
     output_dir = '../DATA/Repli_BS/MATLAB_DATA'
