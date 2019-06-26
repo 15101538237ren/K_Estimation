@@ -13,7 +13,7 @@ end
 for i = 1 : comb_size
     for j = 1 : chr_size
        progress=strcat('combine idx: ', num2str(i), ' chr', num2str(j));
-       diso(progress);
+       disp(progress);
        comb_i = num2str(i);
        data_fp = strcat(DATA_DIR, comb_i, '/', 'chr', num2str(j) , '.mat');
        
