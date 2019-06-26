@@ -128,4 +128,4 @@ save(out_fp,'FitSites','MLELam','MLEFrac')
 toc
 end
 
-histogram(log10(MLELam(:, 1)), 'normalization', 'pdf');
+%histogram(log10(MLELam(:, 1)), 'normalization', 'pdf');
