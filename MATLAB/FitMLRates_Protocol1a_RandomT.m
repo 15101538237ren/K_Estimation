@@ -1,15 +1,6 @@
-function [] = FitMLRates_Protocol1()
+function [] = FitMLRates_Protocol1a_RandomT(data_fp, out_fp)
 %read in the dataset
-DatasetName=['Sim_DiffDec_WTBulkf_D2'];
-ProtocolName='Protocol1';
-datafilename=['AllDat_' DatasetName];
-load(datafilename,'AllDat','sites');
-%AllDat is an array of size (NSites,NTimepoints,2). The data in
-%AllDat(i,j,1) is the number of methylated reads at site i at timepoint j.
-%The data in AllDat(i,j,2) is the number of unmethylated reads at site i at
-%timepoint j. Therefore AllDat(i,j,1)+AllDat(i,j,2)=Totalreads(i,j).
-
-ratefilename=['MLRates_' ProtocolName '_' DatasetName]; %filename for saving results
+load(data_fp, 'AllDat', 'sites');
 
 %the experimental timepoints. They are shifted by tshift, which accounts
 %for the fact that at, e.g., time=0 hrs, the captured reads started
@@ -38,7 +29,8 @@ minlam=min(lamgrid);
 %initialize various arrays
 MLELam=zeros(numsites,3);
 MLEFrac=zeros(numsites,3);
-FitSites=zeros(numsites,1);
+FitSites=sites(KeepSites);
+Fitness=zeros(numsites,1);
 PmethA=zeros(numel(fracgrid),numel(lamgrid),numel(Times));
 PumethA=zeros(numel(fracgrid),numel(lamgrid),numel(Times));
 
@@ -52,7 +44,7 @@ for ii=1:numsites %loop over the sites
     if (ii-counter*SaveEvery)/SaveEvery >= 1
         save ii ii
         counter=counter+1;
-        save(ratefilename,'FitSites','MLELam','MLEFrac')
+        save(out_fp,'FitSites','MLELam','MLEFrac')
         toc
     end
     
@@ -63,12 +55,16 @@ for ii=1:numsites %loop over the sites
     %loop over the timepoints to compute the LogLikelihood surface
     for tind=1:numel(Times)
         Time=Times(tind);
-        expterms=1-exp(-lamgrid.*Time);
+%for time tj and parameters f and k (lambda), the probability of observing methyl is assumed to be
+%P=f+f/k*(exp(-k*(tj+.5))-exp(-k*(tj-0.5)))
+        expterms=exp(-lamgrid*(Time+0.5))-exp(-lamgrid*(Time-0.5));
         expterms(expterms>=1)=1-eps;
+        replam=repmat(lamgrid,numel(fracgrid),1);
         repexpterms=repmat(expterms,numel(fracgrid),1);
         repfrac=repmat(fracgrid',1,numel(lamgrid));
-        PmethA(:,:,tind)=Meths(tind).*log(repfrac.*repexpterms);
-        PumethA(:,:,tind)=UMeths(tind).*log(1-repfrac.*repexpterms);
+        Pmeth=repfrac+(repfrac./replam).*repexpterms;
+        PmethA(:,:,tind)=Meths(tind).*log(Pmeth);
+        PumethA(:,:,tind)=UMeths(tind).*log(1-Pmeth);
     end
     %this is the LogLikelihood surface as a function of the parameters
     LogLikelihood=sum(PmethA,3,'omitnan')+sum(PumethA,3,'omitnan');
@@ -76,7 +72,10 @@ for ii=1:numsites %loop over the sites
     %find the parameter values that maximize the LogLikelihood
     szL=size(LogLikelihood);
     [MaxLL,i]=max(LogLikelihood(:));
-    [I,J]=ind2sub(szL,i);
+    [I,J]=ind2sub(szL,i); %I,J are the indices of ML parameters
+    %these are the "raw" ML parameters, but need to deal with edge cases (below)	
+    RawLam=lamgrid(J);
+    RawFrac=fracgrid(I);
     
     %compute the profile likelihood functions for both parameters. (These are used
     %to compute confidence intervals).
@@ -88,11 +87,7 @@ for ii=1:numsites %loop over the sites
     %CIs will be computed based on Likelihood Ratio Test, using Chi-squared
     %values
     PrcVal=3.841; %95th of chi-squared distribution, 1 free param. 
-    %PrcValIn=PrcVal;%95th of chi-squared distribution, 1 free param.
     PrcValIn=1.32; %75th
-    %PrcValIn=0.455; %50th
-    %PrcValIn=0.102; %25th
-    %PrcValIn=0.016; %10th
     
     %Find the 95% confidence intervals
     LamRegion95=lamgrid(GetCILam<=PrcVal);
@@ -100,39 +95,51 @@ for ii=1:numsites %loop over the sites
     CILam95=[LamRegion95(1) LamRegion95(end)];
     CIfrac95=[fracRegion95(1) fracRegion95(end)];
     
-    %Find the inner (50th%) confidence intervals
+    %Find the inner confidence intervals (as determined by PrcValIn)
     LamRegionIn=lamgrid(GetCILam<=PrcValIn);
     fracRegionIn=fracgrid(GetCIfrac<=PrcValIn);
     CILamIn=[LamRegionIn(1) LamRegionIn(end)];
     CIfracIn=[fracRegionIn(1) fracRegionIn(end)];
+
+    %Find the indices in lamgrid of the inner CI edges (upper and lower)
+    LamIndsIn=find(GetCILam<=PrcValIn);
+    LamIndsInnerEdges=[LamIndsIn(1) LamIndsIn(end)];
     
+    %deal with edge cases: where k is either unidentifiable, or only lower/upper bound is identifiable
     %check to see whether the inner confidence interval hits the boundary
     CheckCIsL=[minlam,maxlam]-CILamIn;
     keepindlam=find(abs(CheckCIsL)>realmin);
     
     if numel(keepindlam)==0 %this indicates the inner CI overlaps entire region-->k is unidentifiable. Set k==0
-        %this was tested--the sites with only unmethylated reads are found
-        %this way, and this method gives identical results to simply
-        %searching for reads with only unmethylated sites
+        %this was tested--the sites with only unmethylated reads or very few methylated reads are found
+        %this way
         MLELam(ii,:)=[0,0,0];
         MLEFrac(ii,:)=[0,0,0];
-    elseif numel(keepindlam)==1 %this indicates CI value hits one boundary-->indicated upper/lower bound on k
-        %when the CI hits the boundary, use the inner CI value as the rate
-        %estimate
-        MLELam(ii,:)=[CILamIn(keepindlam),CILam95(1),CILam95(2)];
-        lamind=find(lamgrid==CILamIn(keepindlam));
+    elseif abs(RawLam-maxlam)<=realmin %if the raw k lies on upper boundary of range
+        %set k value to the lower edge of inner CI (gives a lower bound on k)
+	MLELam(ii,:)=[CILamIn(1),CILam95(1),CILam95(2)];
+        lamind=LamIndsInnerEdges(1);
+        %now find the corresponding max f value
         [aa,bb]=max(LogLikelihood(:,lamind));
         MLEFrac(ii,:)=[fracgrid(bb),CIfrac95(1),CIfrac95(2)];
-    else
-        MLELam(ii,:)=[lamgrid(J),CILam95(1),CILam95(2)];
-        MLEFrac(ii,:)=[fracgrid(I),CIfrac95(1),CIfrac95(2)];
+        MaxLL=LogLikelihood(bb,lamind);
+    elseif abs(RawLam-minlam)<=realmin %if the raw k lies on lower boundary of range
+        %set k value to the upper edge of inner CI (gives an upper bound on k)
+	MLELam(ii,:)=[CILamIn(2),CILam95(1),CILam95(2)];
+        lamind=LamIndsInnerEdges(2);
+        %now find the corresponding max f value
+        [aa,bb]=max(LogLikelihood(:,lamind));
+        MLEFrac(ii,:)=[fracgrid(bb),CIfrac95(1),CIfrac95(2)];
+        MaxLL=LogLikelihood(bb,lamind);
+    else %if no edge case is relevant
+        MLELam(ii,:)=[RawLam,CILam95(1),CILam95(2)];
+        MLEFrac(ii,:)=[RawFrac,CIfrac95(1),CIfrac95(2)];
     end
-    FitSites(ii)=sites(KeepSites(ii));
+Fitness(ii)=MaxLL;
 end
-save(ratefilename,'FitSites','MLELam','MLEFrac')
+save(out_fp,'FitSites','MLELam','MLEFrac')
 toc
 end
-
 
 
 

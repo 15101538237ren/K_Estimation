@@ -66,41 +66,40 @@ def dividing_data_test():
     out_put_fp2 = '../DATA/Repli_BS/0h_rep2.bed'
     dividing_data_randomly(input_fp, out_put_fp1, out_put_fp2)
 
-def prepare_matlab_format_data_for_mle(input_dir, output_dir, combination_indexs, sep="\s+",line_end = "\n"):
+def prepare_matlab_format_data_for_mle(input_dir, output_dir, comb_index, combination_indexs, sep="\s+",line_end = "\n"):
 
-    for c_idx, combination_index in enumerate(combination_indexs):
-        out_subdir = os.path.join(output_dir, str(c_idx + 1))
-        if not os.path.exists(out_subdir):
-            os.makedirs(out_subdir)
-        for chromosome in CHROMOSOMES:
-            sites = []  # the list to store cpg sites
-            mat_data = []
-            for t_idx, time_point in enumerate(TIME_POINTS):
-                repli_name = time_point + '_' + combination_index
+    out_subdir = os.path.join(output_dir, str(comb_index))
+    if not os.path.exists(out_subdir):
+        os.makedirs(out_subdir)
+    for chromosome in CHROMOSOMES:
+        sites = []  # the list to store cpg sites
+        mat_data = []
+        for t_idx, time_point in enumerate(TIME_POINTS):
+            repli_name = time_point + '_' + combination_indexs[t_idx]
 
-                input_file_path = os.path.join(input_dir, repli_name, 'chr' + chromosome + '.bed')
-                print("processing %s" % input_file_path)
+            input_file_path = os.path.join(input_dir, repli_name, 'chr' + chromosome + '.bed')
+            print("processing comb_idx: %d %s" % (comb_index, input_file_path))
 
-                line_idx = 0
-                with open(input_file_path, "r") as input_file:
+            line_idx = 0
+            with open(input_file_path, "r") as input_file:
+                line = input_file.readline()
+                while line:
+                    line_contents = re.split(sep, line.strip(line_end))
+                    chr_i, start, end, methy_reads, unmethy_reads = line_contents
+                    methy_reads = int(methy_reads)
+                    unmethy_reads = int(unmethy_reads)
+                    if t_idx == 0:
+                        sites.append(int(start))
+                        data_arr = np.zeros((len(TIME_POINTS), 2))
+                        mat_data.append(data_arr)
+
+                    mat_data[line_idx][t_idx][0] = methy_reads
+                    mat_data[line_idx][t_idx][1] = unmethy_reads
                     line = input_file.readline()
-                    while line:
-                        line_contents = re.split(sep, line.strip(line_end))
-                        chr_i, start, end, methy_reads, unmethy_reads = line_contents
-                        methy_reads = int(methy_reads)
-                        unmethy_reads = int(unmethy_reads)
-                        if t_idx == 0:
-                            sites.append(int(start))
-                            data_arr = np.zeros((len(TIME_POINTS), 2))
-                            mat_data.append(data_arr)
-
-                        mat_data[line_idx][t_idx][0] = methy_reads
-                        mat_data[line_idx][t_idx][1] = unmethy_reads
-                        line = input_file.readline()
-                        line_idx += 1
-            mat_data = np.array(mat_data)
-            MAT_DICT = {'AllDat': mat_data, 'sites': sites}
-            sio.savemat(os.path.join(out_subdir, 'chr' + chromosome + '.mat'), MAT_DICT)
+                    line_idx += 1
+        mat_data = np.array(mat_data)
+        MAT_DICT = {'AllDat': mat_data, 'sites': sites}
+        sio.savemat(os.path.join(out_subdir, 'chr' + chromosome + '.mat'), MAT_DICT)
 def combine_replicates(input_dir, output_dir):
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
@@ -123,8 +122,9 @@ def combine_replicates(input_dir, output_dir):
         content_to_write = '\n'.join(ltws)
         combination_index_file.write(content_to_write)
         combination_index_file.write('\n')
-    for combination_indexs in combination_pairs:
-        prepare_matlab_format_data_for_mle(input_dir, output_dir, combination_indexs)
+    for comb_index, combination_indexs in enumerate(combination_pairs):
+        if comb_index >= 7 and comb_index != 40:
+            prepare_matlab_format_data_for_mle(input_dir, output_dir, comb_index + 1, combination_indexs)
 if __name__ == "__main__":
     input_dir = '../DATA/Repli_BS/TMP'
     output_dir = '../DATA/Repli_BS/MATLAB_DATA'
