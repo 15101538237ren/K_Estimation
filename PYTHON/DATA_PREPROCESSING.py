@@ -113,12 +113,53 @@ def prepare_matlab_format_data_for_mle(comb_index, combination_indexs, sep="\s+"
         mat_data = np.array(mat_data)
         MAT_DICT = {'AllDat': mat_data, 'sites': sites}
         sio.savemat(os.path.join(out_subdir, 'chr' + chromosome + '.mat'), MAT_DICT)
+def merge_all_data_for_consistency_validation(sep="\s+",line_end = "\n"):
+    chromosome = '1'
+    merged_data_dir = os.path.join(input_dir, 'MERGED_DATA')
+    if not os.path.exists(merged_data_dir):
+        os.makedirs(merged_data_dir)
+
+    methy_merged_data_fp = os.path.join(merged_data_dir, 'All_methy_data_merged.bed')
+    unmethy_merged_data_fp = os.path.join(merged_data_dir, 'All_unmethy_data_merged.bed')
+
+    merged_data = None
+    NCOLS = 5 # site loc, 0h reads, 1h reads, 4h reads, 16h reads
+    FILE_COUNTER = 0
+
+    for t_idx, time_point in enumerate(TIME_POINTS):
+        for repli_i in range(1, NUMBER_OF_REPLICATES[t_idx] + 1):
+            repli_name = time_point + '_' + 'rep' + str(repli_i)
+
+            input_file_path = os.path.join(input_dir, repli_name, 'chr' + chromosome + '.bed')
+            print("processing %s" % (input_file_path))
+
+            line_idx = 0
+            with open(input_file_path, "r") as input_file:
+                FILE_COUNTER += 1
+                lines = [line for line in input_file]
+                if FILE_COUNTER == 1:
+                    NUMBER_OF_LINES = len(lines)
+                    merged_data = np.zeros((NUMBER_OF_LINES, NCOLS, 2), dtype=np.int64)
+                for line in lines:
+                    if line_idx % 500000 == 0:
+                        print("%d lines processed" % line_idx)
+                    line_contents = re.split(sep, line.strip(line_end))
+                    _, start, _, methy_reads, unmethy_reads = line_contents
+                    methy_reads = int(methy_reads)
+                    unmethy_reads = int(unmethy_reads)
+                    if FILE_COUNTER == 1:
+                        merged_data[line_idx][0][0] = int(start)
+                        merged_data[line_idx][0][1] = int(start)
+                    merged_data[line_idx][t_idx + 1][0] += methy_reads
+                    merged_data[line_idx][t_idx + 1][1] += unmethy_reads
+                    line_idx += 1
+    np.savetxt(methy_merged_data_fp, merged_data[:, :, 0], fmt="%d\t%d\t%d\t%d\t%d", delimiter='\n')
+    np.savetxt(unmethy_merged_data_fp, merged_data[:, :, 1], fmt="%d\t%d\t%d\t%d\t%d", delimiter='\n')
 def wrapper(row):
     comb_index= row[0]
     combination_indexs = list(row[1:5])
     prepare_matlab_format_data_for_mle(comb_index, combination_indexs)
 def combine_replicates():
-
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
@@ -146,4 +187,4 @@ def combine_replicates():
     pool = mp.Pool(processes=num_workers)
     pool.map_async(wrapper, tups).get()
 if __name__ == "__main__":
-    combine_replicates()
+    merge_all_data_for_consistency_validation()
