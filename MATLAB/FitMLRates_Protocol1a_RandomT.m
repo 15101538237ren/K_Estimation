@@ -31,22 +31,24 @@ MLELam=zeros(numsites,3);
 MLEFrac=zeros(numsites,3);
 FitSites=sites(KeepSites);
 Fitness=zeros(numsites,1);
-PmethA=zeros(numel(fracgrid),numel(lamgrid),numel(Times));
-PumethA=zeros(numel(fracgrid),numel(lamgrid),numel(Times));
 
 tic
 SaveEvery=5E4;
 counter=0;
 
-for ii=1:numsites %loop over the sites
+parfor ii=1:numsites %loop over the sites
+    
+    PmethA=zeros(numel(fracgrid),numel(lamgrid),numel(Times));
+    PumethA=zeros(numel(fracgrid),numel(lamgrid),numel(Times));
     
     %save the fitted data periodically
-    if (ii-counter*SaveEvery)/SaveEvery >= 1
-        save ii ii
-        counter=counter+1;
-        save(out_fp,'FitSites','MLELam','MLEFrac')
-        toc
-    end
+%     if (ii-counter*SaveEvery)/SaveEvery >= 1
+%         save ii ii
+%         counter=counter+1;
+%         save(out_fp,'FitSites','MLELam','MLEFrac')
+%         toc
+%     end
+
     
     %get the read data for this site
     Meths=AllDat(KeepSites(ii),:,1);

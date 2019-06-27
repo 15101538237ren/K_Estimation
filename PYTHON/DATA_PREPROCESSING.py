@@ -77,7 +77,9 @@ def dividing_data_test():
     out_put_fp2 = '../DATA/Repli_BS/0h_rep2.bed'
     dividing_data_randomly(input_fp, out_put_fp1, out_put_fp2)
 
-def prepare_matlab_format_data_for_mle(input_dir, output_dir, comb_index, combination_indexs, sep="\s+",line_end = "\n"):
+input_dir = '../DATA/Repli_BS/TMP'
+output_dir = '../DATA/Repli_BS/MATLAB_DATA'
+def prepare_matlab_format_data_for_mle(comb_index, combination_indexs, sep="\s+",line_end = "\n"):
 
     out_subdir = os.path.join(output_dir, str(comb_index))
     if not os.path.exists(out_subdir):
@@ -114,8 +116,8 @@ def prepare_matlab_format_data_for_mle(input_dir, output_dir, comb_index, combin
 def wrapper(row):
     comb_index= row[0]
     combination_indexs = list(row[1:5])
-    prepare_matlab_format_data_for_mle(input_dir, output_dir, comb_index, combination_indexs)
-def combine_replicates(input_dir, output_dir):
+    prepare_matlab_format_data_for_mle(comb_index, combination_indexs)
+def combine_replicates():
 
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
@@ -144,6 +146,4 @@ def combine_replicates(input_dir, output_dir):
     pool = mp.Pool(processes=num_workers)
     pool.map_async(wrapper, tups).get()
 if __name__ == "__main__":
-    input_dir = '../DATA/Repli_BS/TMP'
-    output_dir = '../DATA/Repli_BS/MATLAB_DATA'
-    combine_replicates(input_dir, output_dir)
+    combine_replicates()
