@@ -26,37 +26,34 @@ overlapped_k41=overlapped_k41(over_idxs);% -Inf filtered overlapped K values in 
 
 fig = figure(1);
 
+% subplot(2,2,1);
+% X_edges = -2: 0.1: 1; % The range of K values in data 1
+% Y_edges = -2: 0.1: 1; % The range of K values in data 41
+% 
+% [N,C]=hist3([overlapped_k1(:), overlapped_k41(:)], 'Edges', {X_edges, Y_edges});
+% contourf(C{1},C{2},N); % Contour Plot of K values in both data 1 and data 41
+% colorbar;
+% 
+% [R,P,RLO,RUP]= corrcoef(overlapped_k1, overlapped_k41, 'alpha', 0.05); % Correlation coefficient of K values between data 1 and data 41
+% 
+% 
+% tt1 = strcat('Corrlation: ', num2str(round(R(2,1),2)));
+% title(tt1);
+% xlabel('K from DATA 1');
+% ylabel('K from DATA 41');
+
+
 subplot(2,2,1);
-X_edges = -2: 0.1: 1; % The range of K values in data 1
-Y_edges = -2: 0.1: 1; % The range of K values in data 41
-
-[N,C]=hist3([overlapped_k1(:), overlapped_k41(:)], 'Edges', {X_edges, Y_edges});
-contourf(C{1},C{2},N); % Contour Plot of K values in both data 1 and data 41
-colorbar;
-
-[R,P,RLO,RUP]= corrcoef(overlapped_k1, overlapped_k41, 'alpha', 0.05); % Correlation coefficient of K values between data 1 and data 41
-
-
-tt1 = strcat('Corrlation: ', num2str(round(R(2,1),2)));
-title(tt1);
-xlabel('K from DATA 1');
-ylabel('K from DATA 41');
-
-
-
-subplot(2,2,2);
 close_idxs = abs(overlapped_k1 - overlapped_k41) < 1; % Whether the K values in overlapped CpGs are close enough (within 1 order of mangnitude, i.e. abs(Ks in 1 - Ks in 41) < 1), return a boolean array
 
-percentage_of_close_ks = double(length(overlapped_k1(close_idxs)))/length(overlapped_k41) * 100.0;
+percentage_of_close_idxs = double(length(overlapped_k1(close_idxs)))/length(overlapped_k41) * 100.0;
 
 
 plot(overlapped_k1(close_idxs), overlapped_k41(close_idxs), 'r.');
 hold on;
-plot(overlapped_k1(far_idxs), overlapped_k41(far_idxs), 'b.');
+plot(overlapped_k1(~close_idxs), overlapped_k41(~close_idxs), 'b.');
 tt = strcat(num2str(length(overlapped_k1(close_idxs))) ,' and ', num2str(round(percentage_of_close_idxs, 1)), ' % overlapped sites are close in K values');
-
-tt2 = strcat(num2str(round(percentage_of_close_ks, 1)), '% Ks are close in Overlapped CpGs (',num2str(length(overlapped_k1(close_idxs))) , '/', num2str(length(overlapped_k41)),')');
-title(tt2);
+title(tt);
 xlabel('K from DATA 1');
 ylabel('K from DATA 41');
 xlim([-2, 1]);

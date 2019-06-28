@@ -5,14 +5,15 @@ close all;
 
 chr_size = 1;
 NSites=60000; %number of sites to simulate
-ts=[0.5,1.5,4.5,16.5];
-N_Times= numel(ts);
+N_Times= 20;
+Step_length = 1;
+ts=[0: Step_length: N_Times * Step_length] + 0.5;
 rs = RandStream('mlfg6331_64');%Create the random number stream for reproducibility.
 
 
 K_1_BASE_PATH = '../DATA/Repli_BS/K_RATES/1/';
 MERGED_DATA_PATH = '../DATA/Repli_BS/TMP/MERGED_DATA/';
-OUT_FIG_DIR = 'Figures/SYN_DATA_READS_SAMPLED_FROM_FITTED_SITES_N60000/';
+OUT_FIG_DIR = strcat('Figures/INCREASE_NUMBER_OG_TIME_POINTS_',num2str(Step_length), '/');
 if ~exist(OUT_FIG_DIR)
     mkdir(OUT_FIG_DIR);
 end
@@ -26,7 +27,7 @@ for i = 1 : chr_size
     ks=MLELam(ChooseSites ,1); %assigning k values
 
     for ii=1: N_Times
-    Ps(ii,:)=fs.*(1-exp(-ks*ts(ii))); %probability array 
+        Ps(ii,:)=fs.*(1-exp(-ks*ts(ii))); %probability array 
     end
     
     load(strcat(MERGED_DATA_PATH, 'chr', num2str(i) , '.mat'), 'AllDat', 'sites'); % All merged chr1 sites, without Fitting, therefore, to sample the reads from the fitted sites, we have to extract the fitted sites and sample from them.
@@ -39,9 +40,9 @@ for i = 1 : chr_size
 
     %set the number of reads per site per timepoint. Possibly change this to
     %sampling from true read depths
-    Tot_Size = size(Fitted_dat_with_reads_info, 1);
-    sampled_idxs = datasample(rs, 1 : Tot_Size, NSites, 'Replace',false);
-    Sampled_data_with_reads_info = Fitted_dat_with_reads_info(sampled_idxs , :);
+%     Tot_Size = size(Fitted_dat_with_reads_info, 1);
+%     sampled_idxs = datasample(rs, 1 : Tot_Size, NSites, 'Replace',false);
+%     Sampled_data_with_reads_info = Fitted_dat_with_reads_info(sampled_idxs , :);
 
 
     All_Reads_rep1 = zeros(NSites, N_Times, 2);
@@ -49,11 +50,11 @@ for i = 1 : chr_size
 
     p = 0.5; %probability of binomial distribution
     %Computing the Read data by probability
+    Numreads=randi([10, 15], NSites, N_Times);
     for ii=1 : NSites
         for jj=1 : N_Times
-            Numreads = Sampled_data_with_reads_info(ii,jj);
-            MReads=sum(double(rand(Numreads, 1) < Ps(jj,ii)));
-            UReads=Numreads-MReads;
+            MReads=sum(double(rand(Numreads(ii, jj), 1) < Ps(jj,ii)));
+            UReads=Numreads(ii, jj)-MReads;
             MR1 = binornd(MReads, p);
             All_Reads_rep1(ii,jj, 1)=MR1;
             All_Reads_rep2(ii,jj, 1)=MReads - MR1;
