@@ -1,4 +1,4 @@
-function Plot_Correlation(K1_PATH, K_41_PATH, Figure_name)
+function Plot_Correlation(K1_PATH, K_41_PATH, Figure_path)
 %K1_PATH = '../DATA/Repli_BS/K_RATES/1/chr1.mat';%'DATA/k1_chr1.mat';
 %K_41_PATH ='../DATA/Repli_BS/K_RATES/41/chr1.mat'; %'DATA/k41_chr1.mat';
     
@@ -39,7 +39,7 @@ colorbar;
 [R,P,RLO,RUP]= corrcoef(overlapped_k1, overlapped_k41, 'alpha', 0.05); % Correlation coefficient of K values between data 1 and data 41
 
 
-tt1 = strcat('Corrlation: ', num2str(round(R(2,1),2)), ', 95% CI: [', num2str(round(RLO(2,1),2)), ',' , num2str(round(RUP(2,1),2)) , ']');
+tt1 = strcat('Corrlation: ', num2str(round(R(2,1),2)));
 title(tt1);
 xlabel('K from DATA 1');
 ylabel('K from DATA 41');
@@ -53,10 +53,10 @@ far_idxs = ~close_idxs; % The boolean array for the CpGs that are not close enou
 percentage_of_close_idxs = double(length(overlapped_k1(close_idxs)))/length(overlapped_k41) * 100;
 
 plot(overlapped_k1(close_idxs), overlapped_k41(close_idxs), 'r.');
-[R2,P2,RLO2,RUP2]= corrcoef(overlapped_k1(close_idxs), overlapped_k41(close_idxs), 'alpha', 0.05);
+%[R2,P2,RLO2,RUP2]= corrcoef(overlapped_k1(close_idxs), overlapped_k41(close_idxs), 'alpha', 0.05);
 hold on;
 plot(overlapped_k1(far_idxs), overlapped_k41(far_idxs), 'b.');
-tt = strcat(num2str(length(overlapped_k1(close_idxs))) ,'# , ', num2str(round(percentage_of_close_idxs, 1)), '%  in red, Corr: ', num2str(round(R2(2,1),2)), ', 95% CI: [', num2str(round(RLO2(2,1),2)), ',' , num2str(round(RUP2(2,1),2)) , ']');
+tt = strcat(num2str(length(overlapped_k1(close_idxs))) ,' and ', num2str(round(percentage_of_close_idxs, 1)), ' % overlapped sites are close in K values');
 
 title(tt);
 xlabel('K from DATA 1');
@@ -69,6 +69,6 @@ if ~exist(FIGURE_DIR)
     mkdir(FIGURE_DIR);
 end
 %'Density_of_logK_in_data_1_and_41'
-print(fig, strcat(FIGURE_DIR, '/',Figure_name ,'.pdf') , '-dpdf','-opengl','-r300');
+print(fig, Figure_path, '-dpdf','-opengl','-r300');
 close;
 end

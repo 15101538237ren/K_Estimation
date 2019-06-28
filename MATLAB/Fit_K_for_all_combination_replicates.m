@@ -1,3 +1,4 @@
+function Fit_K_for_all_combination_replicates()
 clear;
 close all;
 clc;
@@ -24,4 +25,5 @@ for i = 1 : comb_size
        out_fp = strcat(OUT_DIR, comb_i, '/', 'chr', num2str(j) , '.mat');
        FitMLRates_Protocol1a_RandomT(data_fp, out_fp);
     end
+end
 end
