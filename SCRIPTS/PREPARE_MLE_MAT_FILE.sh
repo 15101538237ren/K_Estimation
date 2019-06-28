@@ -3,24 +3,24 @@
 #	each file is from one chromosome and contains a matrix with 
 #	SHAPE: NMERGED_SITES * 4 TIME POINTS * 2
 
-BASE_DIR=/Users/emmanueldollinger/MatlabProjects/K_Estimation/DATA
-DATA_DIR=$BASE_DIR/Repli_BS
+BASE_DIR=/Users/emmanueldollinger/MatlabProjects/K_Estimation/
+DATA_DIR=$BASE_DIR/DATA/Repli_BS
 TMP_DIR=$DATA_DIR/TMP
 mkdir -p $TMP_DIR
+Sorted_FILE=$TMP_DIR/Sorted.bed
 MERGED_FILE=$TMP_DIR/MERGED_CPGs.bed
+script=$BASE_DIR/SCRIPTS/diff_sites.sh
 
 cd $DATA_DIR
 
 # 1. Merge All CpGs into one file
-cat *.bed | sort -k 1,1 -k2,2n| bedtools merge> $MERGED_FILE
+cat *.bed | gsort -k 1,1 -k2,2n --parallel=8  -S 50%>$Sorted_FILE
+
+bedtools merge -i $Sorted_FILE > $MERGED_FILE
 
 for f in *.bed
 do
-  filename=${f%_*}
-  bedtools intersect -a $MERGED_FILE -b $f -v| awk 'BEGIN { OFS = "," } {print $0"\t0\t0"}' > $TMP_DIR/$filename'_no_overlap.bed'
-  cat $f $TMP_DIR/$filename'_no_overlap.bed' | sort -k 1,1 -k2,2n >$TMP_DIR/$f
-  rm -f $TMP_DIR/$filename'_no_overlap.bed'
-  echo $filename
+  sh $script -f $f -m $MERGED_FILE -o $TMP_DIR &
 done
 
 cd $TMP_DIR

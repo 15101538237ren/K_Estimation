@@ -10,6 +10,6 @@ cd $DATA_DIR
 
 for f in *.bed
 do
-  sort -k 1,1 -k2,2n $f> $OUT_DIR/$f
+  gsort -k 1,1 -k2,2n --parallel=8  -S 50%  $f> $OUT_DIR/$f
   echo $f
 done

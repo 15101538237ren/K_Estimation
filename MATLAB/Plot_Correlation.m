@@ -1,14 +1,13 @@
-DATA_1_PATH = 'DATA/k1_chr1.mat';
-DATA_41_PATH = 'DATA/k41_chr1.mat';
-    
-load(DATA_1_PATH);
+function Plot_Correlation(K1_PATH, K_41_PATH, Figure_path)
+
+load(K1_PATH);
 k1 = zeros(length(FitSites'), 2); 
 k1(:, 1) = FitSites';% Fitted sites
 k1(:, 2) = MLELam(:, 1); % K values
 
 clear FitSites MLELam MLEFrac;
 
-load(DATA_41_PATH);
+load(K_41_PATH);
 
 k41 = zeros(length(FitSites'), 2);
 k41(:, 1) = FitSites';
@@ -38,7 +37,7 @@ colorbar;
 [R,P,RLO,RUP]= corrcoef(overlapped_k1, overlapped_k41, 'alpha', 0.05); % Correlation coefficient of K values between data 1 and data 41
 
 
-tt1 = strcat('Corrlation: ', num2str(round(R(2,1),2)), ', 95% CI: [', num2str(round(RLO(2,1),2)), ',' , num2str(round(RUP(2,1),2)) , ']');
+tt1 = strcat('Corrlation: ', num2str(round(R(2,1),2)));
 title(tt1);
 xlabel('K from DATA 1');
 ylabel('K from DATA 41');
@@ -50,11 +49,11 @@ close_idxs = abs(overlapped_k1 - overlapped_k41) < 1; % Whether the K values in 
 
 percentage_of_close_ks = double(length(overlapped_k1(close_idxs)))/length(overlapped_k41) * 100.0;
 
-plot(overlapped_k1(close_idxs), overlapped_k41(close_idxs), 'r.'); % Plot the K values which are close by Red
-hold on;
-plot(overlapped_k1(~close_idxs), overlapped_k41(~close_idxs), 'b.');% Plot the K values which are not close by Blue
 
-[R2,P2,RLO2,RUP2]= corrcoef(overlapped_k1(close_idxs), overlapped_k41(close_idxs), 'alpha', 0.05);
+plot(overlapped_k1(close_idxs), overlapped_k41(close_idxs), 'r.');
+hold on;
+plot(overlapped_k1(far_idxs), overlapped_k41(far_idxs), 'b.');
+tt = strcat(num2str(length(overlapped_k1(close_idxs))) ,' and ', num2str(round(percentage_of_close_idxs, 1)), ' % overlapped sites are close in K values');
 
 tt2 = strcat(num2str(round(percentage_of_close_ks, 1)), '% Ks are close in Overlapped CpGs (',num2str(length(overlapped_k1(close_idxs))) , '/', num2str(length(overlapped_k41)),')');
 title(tt2);
@@ -67,5 +66,6 @@ FIGURE_DIR = 'Figures';
 if ~exist(FIGURE_DIR)
     mkdir(FIGURE_DIR);
 end
-print(fig, strcat(FIGURE_DIR, '/', 'Density_of_logK_in_data_1_and_41.pdf') , '-dpdf','-opengl','-r300');
+print(fig, Figure_path, '-dpdf','-opengl','-r300');
 close;
+end
