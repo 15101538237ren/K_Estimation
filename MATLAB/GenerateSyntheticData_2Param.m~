@@ -31,9 +31,11 @@ sampled_idxs = datasample(rs, 1 : Tot_Size, NSites, 'Replace',false);
 Sampled_data_with_reads_info = Fitted_dat_with_reads_info(sampled_idxs , :);
 
 
-All_Reads_rep1 = zeros(NSites, N_Times, 2);
-All_Reads_rep2 = zeros(NSites, N_Times, 2);
+MethReads_rep1 = zeros(NSites, N_Times);
+MethReads_rep2 = zeros(NSites, N_Times);
 
+UMethReads_rep1 = zeros(NSites, N_Times);
+UMethReads_rep2 = zeros(NSites, N_Times);
 p = 0.5; %probability of binomial distribution
 %Computing the Read data by probability
 for ii=1 : NSites
@@ -41,27 +43,11 @@ for ii=1 : NSites
         Numreads = Sampled_data_with_reads_info(ii,jj);
         MReads=sum(double(rand(Numreads, 1) < Ps(jj,ii)));
         UReads=Numreads-MReads;
-        MR1 = binornd(MReads, p);
-        All_Reads_rep1(ii,jj, 1)=MR1;
-        All_Reads_rep2(ii,jj, 1)=MReads - MR1;
-        
-        UR1 = binornd(UReads, p);
-        All_Reads_rep1(ii,jj, 2)=UR1; % Unmethylated Reads rep1
-        All_Reads_rep2(ii,jj, 2)=UReads - UR1;
+        M
+        MethReads(ii,jj)=binornd(MReads, p);
+        UMethReads=;
     end
 end
-sites = FitSites(ChooseSites);
 
-REP1_DATA_PATH = 'DATA/REP1.mat';
-AllDat = All_Reads_rep1;
-save(REP1_DATA_PATH,'AllDat','sites');
-
-REP1_K_PATH = 'DATA/REP1_K.mat';
-FitMLRates_Protocol1a_RandomT(REP1_DATA_PATH, REP1_K_PATH);
-
-REP2_DATA_PATH = 'DATA/REP2.mat';
-AllDat = All_Reads_rep2;
-save(REP2_DATA_PATH,'AllDat','sites');
-
-REP2_K_PATH = 'DATA/REP2_K.mat';
-FitMLRates_Protocol1a_RandomT(REP2_DATA_PATH, REP2_K_PATH);
+Times=[0.5,1.5,4.5,16.5];
+%next: load MReads and UMethReads into AllDat
