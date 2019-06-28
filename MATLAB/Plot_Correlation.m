@@ -1,5 +1,5 @@
-DATA_1_PATH = 'DATA/k1_chr1.mat';
-DATA_41_PATH = 'DATA/k41_chr1.mat';
+DATA_1_PATH = '../DATA/Repli_BS/K_RATES/1/chr1.mat';%'DATA/k1_chr1.mat';
+DATA_41_PATH ='../DATA/Repli_BS/K_RATES/41/chr1.mat'; %'DATA/k41_chr1.mat';
     
 load(DATA_1_PATH);
 k1 = zeros(length(FitSites'), 2); 

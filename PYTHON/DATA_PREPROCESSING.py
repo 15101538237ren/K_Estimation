@@ -8,8 +8,8 @@ import pandas as pd
 
 NUMBER_OF_REPLICATES = [2, 3, 3, 3] # number of replicates at 0, 1, 4, 16
 TIME_POINTS = ['0h', '1h', '4h', '16h']
-CHROMOSOMES = [str(i) for i in range(1, 23)]
-CHROMOSOMES.extend(['X', 'Y'])
+CHROMOSOMES = [str(i) for i in range(1, 2)]#23
+#CHROMOSOMES.extend(['X', 'Y'])
 
 def _workers_count():
     cpu_count = 1
@@ -52,12 +52,9 @@ def dividing_data_randomly(input_fp, out_fp1, out_fp2, sep="\s+",line_end = "\n"
                 unmethy_1 = int(np.random.binomial(unmethy_reads, p, 1))  # unmethylated reads for split 1
                 unmethy_2 = unmethy_reads - unmethy_1  # unmethylated reads for split 2
 
-                if unmethy_1 or methy_1:
-                    # if not 0 unmethy and 0 methy: useless data, then append to output data list for split 1
-                    ltws1.append(
+                ltws1.append(
                     '\t'.join([chr_i, str(start), str(end), str(methy_1), str(unmethy_1)]))
-                if unmethy_2 or methy_2:
-                    ltws2.append(
+                ltws2.append(
                     '\t'.join([chr_i, str(start), str(end), str(methy_2), str(unmethy_2)]))
             except ValueError as e:
                 pass
@@ -72,7 +69,7 @@ def dividing_data_randomly(input_fp, out_fp1, out_fp2, sep="\s+",line_end = "\n"
     print('Split %s successful' % input_fp)
 
 def dividing_data_test():
-    input_fp = '../DATA/Repli_BS/OTHER_DATA/HUES64_WT_AllCells_1hBrdU_0Chase_nascent_rep1_3_merged.bed'
+    input_fp = '../DATA/Repli_BS/OTHER_DATA/0h_rep1_3_merged.bed'
     out_put_fp1 = '../DATA/Repli_BS/0h_rep1.bed'
     out_put_fp2 = '../DATA/Repli_BS/0h_rep2.bed'
     dividing_data_randomly(input_fp, out_put_fp1, out_put_fp2)
@@ -125,7 +122,6 @@ def merge_all_data_for_consistency_validation(sep="\s+",line_end = "\n"):
     merged_data = None
     NCOLS = 5 # site loc, 0h reads, 1h reads, 4h reads, 16h reads
     FILE_COUNTER = 0
-
     for t_idx, time_point in enumerate(TIME_POINTS):
         for repli_i in range(1, NUMBER_OF_REPLICATES[t_idx] + 1):
             repli_name = time_point + '_' + 'rep' + str(repli_i)
@@ -141,20 +137,27 @@ def merge_all_data_for_consistency_validation(sep="\s+",line_end = "\n"):
                     NUMBER_OF_LINES = len(lines)
                     merged_data = np.zeros((NUMBER_OF_LINES, NCOLS, 2), dtype=np.int64)
                 for line in lines:
-                    if line_idx % 500000 == 0:
+                    if line_idx  % 500000 == 0:
                         print("%d lines processed" % line_idx)
                     line_contents = re.split(sep, line.strip(line_end))
                     _, start, _, methy_reads, unmethy_reads = line_contents
                     methy_reads = int(methy_reads)
                     unmethy_reads = int(unmethy_reads)
+
                     if FILE_COUNTER == 1:
                         merged_data[line_idx][0][0] = int(start)
                         merged_data[line_idx][0][1] = int(start)
+
                     merged_data[line_idx][t_idx + 1][0] += methy_reads
                     merged_data[line_idx][t_idx + 1][1] += unmethy_reads
                     line_idx += 1
+
     np.savetxt(methy_merged_data_fp, merged_data[:, :, 0], fmt="%d\t%d\t%d\t%d\t%d", delimiter='\n')
     np.savetxt(unmethy_merged_data_fp, merged_data[:, :, 1], fmt="%d\t%d\t%d\t%d\t%d", delimiter='\n')
+    mat_data = merged_data[:, 1: NCOLS ,:]
+    sites = list(merged_data[:, 0, 0])
+    MAT_DICT = {'AllDat': mat_data, 'sites': sites}
+    sio.savemat(os.path.join(merged_data_dir, 'chr' + chromosome + '.mat'), MAT_DICT)
 def wrapper(row):
     comb_index= row[0]
     combination_indexs = list(row[1:5])
@@ -182,9 +185,10 @@ def combine_replicates():
     num_workers = _workers_count()
     # Initiating pool
     print('Starting pool with', num_workers, 'workers')
-    parametersDF = pd.read_csv('INDEX_OF_COMBINATION.txt', index_col=0, lineterminator='\n')
+    parametersDF = pd.read_csv('INDEX_OF_COMBINATION.txt', index_col=0, sep='\t', lineterminator='\n')
     tups = parametersDF.itertuples(name=None)
     pool = mp.Pool(processes=num_workers)
     pool.map_async(wrapper, tups).get()
 if __name__ == "__main__":
-    merge_all_data_for_consistency_validation()
+    combine_replicates()
+    #merge_all_data_for_consistency_validation()
