@@ -47,17 +47,17 @@ ylabel('K from DATA 41');
 
 subplot(2,2,2);
 close_idxs = abs(overlapped_k1 - overlapped_k41) < 1; % Whether the K values in overlapped CpGs are close enough (within 1 order of mangnitude, i.e. abs(Ks in 1 - Ks in 41) < 1), return a boolean array
-far_idxs = ~close_idxs; % The boolean array for the CpGs that are not close enough, return the indexs of them.
 
-percentage_of_close_idxs = double(length(overlapped_k1(close_idxs)))/length(overlapped_k41) * 100;
+percentage_of_close_ks = double(length(overlapped_k1(close_idxs)))/length(overlapped_k41) * 100.0;
 
-plot(overlapped_k1(close_idxs), overlapped_k41(close_idxs), 'r.');
-[R2,P2,RLO2,RUP2]= corrcoef(overlapped_k1(close_idxs), overlapped_k41(close_idxs), 'alpha', 0.05);
+plot(overlapped_k1(close_idxs), overlapped_k41(close_idxs), 'r.'); % Plot the K values which are close by Red
 hold on;
-plot(overlapped_k1(far_idxs), overlapped_k41(far_idxs), 'b.');
-tt = strcat(num2str(length(overlapped_k1(close_idxs))) ,'# , ', num2str(round(percentage_of_close_idxs, 1)), '%  in red, Corr: ', num2str(round(R2(2,1),2)), ', 95% CI: [', num2str(round(RLO2(2,1),2)), ',' , num2str(round(RUP2(2,1),2)) , ']');
+plot(overlapped_k1(~close_idxs), overlapped_k41(~close_idxs), 'b.');% Plot the K values which are not close by Blue
 
-title(tt);
+[R2,P2,RLO2,RUP2]= corrcoef(overlapped_k1(close_idxs), overlapped_k41(close_idxs), 'alpha', 0.05);
+
+tt2 = strcat(num2str(round(percentage_of_close_ks, 1)), '% Ks are close in Overlapped CpGs (',num2str(length(overlapped_k1(close_idxs))) , '/', num2str(length(overlapped_k41)),')');
+title(tt2);
 xlabel('K from DATA 1');
 ylabel('K from DATA 41');
 xlim([-2, 1]);
