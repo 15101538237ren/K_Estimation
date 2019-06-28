@@ -1,14 +1,15 @@
-DATA_1_PATH = '../DATA/Repli_BS/K_RATES/1/chr1.mat';%'DATA/k1_chr1.mat';
-DATA_41_PATH ='../DATA/Repli_BS/K_RATES/41/chr1.mat'; %'DATA/k41_chr1.mat';
+function Plot_Correlation(K1_PATH, K_41_PATH, Figure_name)
+%K1_PATH = '../DATA/Repli_BS/K_RATES/1/chr1.mat';%'DATA/k1_chr1.mat';
+%K_41_PATH ='../DATA/Repli_BS/K_RATES/41/chr1.mat'; %'DATA/k41_chr1.mat';
     
-load(DATA_1_PATH);
+load(K1_PATH);
 k1 = zeros(length(FitSites'), 2); 
 k1(:, 1) = FitSites';% Fitted sites
 k1(:, 2) = MLELam(:, 1); % K values
 
 clear FitSites MLELam MLEFrac;
 
-load(DATA_41_PATH);
+load(K_41_PATH);
 
 k41 = zeros(length(FitSites'), 2);
 k41(:, 1) = FitSites';
@@ -67,5 +68,7 @@ FIGURE_DIR = 'Figures';
 if ~exist(FIGURE_DIR)
     mkdir(FIGURE_DIR);
 end
-print(fig, strcat(FIGURE_DIR, '/', 'Density_of_logK_in_data_1_and_41.pdf') , '-dpdf','-opengl','-r300');
+%'Density_of_logK_in_data_1_and_41'
+print(fig, strcat(FIGURE_DIR, '/',Figure_name ,'.pdf') , '-dpdf','-opengl','-r300');
 close;
+end

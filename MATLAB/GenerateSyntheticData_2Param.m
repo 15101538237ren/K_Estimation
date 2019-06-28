@@ -65,3 +65,5 @@ save(REP2_DATA_PATH,'AllDat','sites');
 
 REP2_K_PATH = 'DATA/REP2_K.mat';
 FitMLRates_Protocol1a_RandomT(REP2_DATA_PATH, REP2_K_PATH);
+
+Plot_Correlation(REP1_K_PATH, REP2_K_PATH, 'Density_of_logK_in_Synthesized_Rep1_and_Rep2')
