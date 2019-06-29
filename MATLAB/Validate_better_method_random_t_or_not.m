@@ -5,16 +5,15 @@ close all;
 order_of_magnitude =0.5; % The order of magnitude for which K difference can be considered as conservative.
 
 chr_size = 1;
-NSites= 153136; %number of sites to simulate
+NSites=60000; %number of sites to simulate
 ts=[0.5,1.5,4.5,16.5];
-random_ts = rand(NSites, 4) + ts - 0.5;
 N_Times= numel(ts);
+random_ts = rand(NSites, 4) + ts - 0.5; % Add random T when generates the data
 rs = RandStream('mlfg6331_64');%Create the random number stream for reproducibility.
-
 
 K_1_BASE_PATH = '../DATA/Repli_BS/K_RATES/1/';
 MERGED_DATA_PATH = '../DATA/Repli_BS/TMP/MERGED_DATA/';
-OUT_FIG_DIR = 'Figures/SYN_DATA_READS_SAMPLED_FROM_ALL_SITES_N60000_RANDOM/';
+OUT_FIG_DIR = 'Figures/INFER_METHOD_COMPARISON/';
 if ~exist(OUT_FIG_DIR)
     mkdir(OUT_FIG_DIR);
 end
@@ -24,6 +23,8 @@ for i = 1 : chr_size
     NTot=size(FitSites, 2); %total number of sites in dataset
     
     ChooseSites=datasample(rs, 1 : NTot, NSites, 'Replace',false);
+    F_GROUND_TRUTH= MLEFrac(ChooseSites,:);
+    K_GROUND_TRUTH= MLELam(ChooseSites,:);
     fs=MLEFrac(ChooseSites,1); %assigning f values
     ks=MLELam(ChooseSites ,1); %assigning k values
 
@@ -67,21 +68,44 @@ for i = 1 : chr_size
     end
     sites = FitSites(ChooseSites);
 
-    REP1_DATA_PATH = 'DATA/REP1.mat';
+    REP1_DATA_PATH = 'DATA/REP1.mat'; % Save mat data of rep1 and rep2
     AllDat = All_Reads_rep1;
     save(REP1_DATA_PATH,'AllDat','sites');
-
-    REP1_K_PATH = 'DATA/REP1_K.mat';
-    FitMLRates_Protocol1a(REP1_DATA_PATH, REP1_K_PATH);
-
+    
     REP2_DATA_PATH = 'DATA/REP2.mat';
     AllDat = All_Reads_rep2;
     save(REP2_DATA_PATH,'AllDat','sites');
-
-    REP2_K_PATH = 'DATA/REP2_K.mat';
-    FitMLRates_Protocol1a(REP2_DATA_PATH, REP2_K_PATH);
     
-    Figure_path = strcat(OUT_FIG_DIR, 'chr', num2str(i) , '.pdf');
-    heatmap(REP1_K_PATH, REP2_K_PATH, Figure_path, order_of_magnitude);
+    REP1_K_NON_RANDOM = 'DATA/REP1_K_NON_RANDOM.mat';
+    REP1_K_RANDOM = 'DATA/REP1_K_RANDOMT.mat';
+    
+    REP2_K_NON_RANDOM = 'DATA/REP2_K_NON_RANDOM.mat';
+    REP2_K_RANDOM = 'DATA/REP2_K_RANDOMT.mat';
+    
+    %Infer K of rep1 by non-random t
+    FitMLRates_Protocol1a(REP1_DATA_PATH, REP1_K_NON_RANDOM);
+    %Infer K of rep1 by random t
+    FitMLRates_Protocol1a_RandomT(REP1_DATA_PATH, REP1_K_RANDOM);
+    %infer K of rep2
+    FitMLRates_Protocol1a(REP2_DATA_PATH, REP2_K_NON_RANDOM);
+    FitMLRates_Protocol1a_RandomT(REP2_DATA_PATH, REP2_K_RANDOM);
+    
+    MLELam = K_GROUND_TRUTH;
+    MLEFrac = F_GROUND_TRUTH;
+    FitSites = sites;
+    GROUND_TRUTH_DATA_fp = 'DATA/GROUND_TRUTH_K.mat';
+    save(GROUND_TRUTH_DATA_fp,'FitSites','MLELam','MLEFrac');
+    
+    REP1_K_NON_RANDOM_fig = strcat(OUT_FIG_DIR, 'REP1_K_NON_RANDOM.pdf');
+    heatmap(GROUND_TRUTH_DATA_fp, REP1_K_NON_RANDOM, REP1_K_NON_RANDOM_fig, order_of_magnitude);
+    
+    REP2_K_NON_RANDOM_fig = strcat(OUT_FIG_DIR, 'REP2_K_NON_RANDOM.pdf');
+    heatmap(GROUND_TRUTH_DATA_fp, REP2_K_NON_RANDOM, REP2_K_NON_RANDOM_fig, order_of_magnitude);
+    
+    REP1_K_RANDOM_fig = strcat(OUT_FIG_DIR, 'REP1_K_RANDOM.pdf');
+    heatmap(GROUND_TRUTH_DATA_fp, REP1_K_RANDOM, REP1_K_RANDOM_fig, order_of_magnitude);
+    
+    REP2_K_RANDOM_fig = strcat(OUT_FIG_DIR, 'REP2_K_RANDOM.pdf');
+    heatmap(GROUND_TRUTH_DATA_fp, REP2_K_RANDOM, REP2_K_RANDOM_fig, order_of_magnitude);
 end
 
