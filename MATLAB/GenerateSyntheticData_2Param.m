@@ -2,10 +2,10 @@ clear;
 clc;
 close all;
 
-order_of_magnitude =0.5; % The order of magnitude for which K difference can be considered as conservative.
+order_of_magnitude =1; % The order of magnitude for which K difference can be considered as conservative.
 
 chr_size = 1;
-NSites= 153136; %number of sites to simulate
+NSites= 60000; %number of sites to simulate
 ts=[0.5,1.5,4.5,16.5];
 random_ts = rand(NSites, 4) + ts - 0.5;
 N_Times= numel(ts);
@@ -14,7 +14,7 @@ rs = RandStream('mlfg6331_64');%Create the random number stream for reproducibil
 
 K_1_BASE_PATH = '../DATA/Repli_BS/K_RATES/1/';
 MERGED_DATA_PATH = '../DATA/Repli_BS/TMP/MERGED_DATA/';
-OUT_FIG_DIR = 'Figures/SYN_DATA_READS_SAMPLED_FROM_ALL_SITES_N60000_RANDOM/';
+OUT_FIG_DIR = 'Figures/SYN_DATA_CONSERVATIVE_NON_RANDOM_OFM_1/';
 if ~exist(OUT_FIG_DIR)
     mkdir(OUT_FIG_DIR);
 end
@@ -82,6 +82,6 @@ for i = 1 : chr_size
     FitMLRates_Protocol1a(REP2_DATA_PATH, REP2_K_PATH);
     
     Figure_path = strcat(OUT_FIG_DIR, 'chr', num2str(i) , '.pdf');
-    heatmap(REP1_K_PATH, REP2_K_PATH, Figure_path, order_of_magnitude);
+    heatmap(REP1_K_PATH, REP2_K_PATH, Figure_path, order_of_magnitude, 'log10(K) rep1', 'log10(K) rep2');
 end
 

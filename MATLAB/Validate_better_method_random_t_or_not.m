@@ -2,7 +2,7 @@ clear;
 clc;
 close all;
 
-order_of_magnitude =0.5; % The order of magnitude for which K difference can be considered as conservative.
+order_of_magnitude = 1; % The order of magnitude for which K difference can be considered as conservative.
 
 chr_size = 1;
 NSites=60000; %number of sites to simulate
@@ -82,30 +82,40 @@ for i = 1 : chr_size
     REP2_K_NON_RANDOM = 'DATA/REP2_K_NON_RANDOM.mat';
     REP2_K_RANDOM = 'DATA/REP2_K_RANDOMT.mat';
     
-    %Infer K of rep1 by non-random t
-    FitMLRates_Protocol1a(REP1_DATA_PATH, REP1_K_NON_RANDOM);
-    %Infer K of rep1 by random t
-    FitMLRates_Protocol1a_RandomT(REP1_DATA_PATH, REP1_K_RANDOM);
-    %infer K of rep2
-    FitMLRates_Protocol1a(REP2_DATA_PATH, REP2_K_NON_RANDOM);
-    FitMLRates_Protocol1a_RandomT(REP2_DATA_PATH, REP2_K_RANDOM);
+    %Infer K of rep1 by non-random t random t also for rep2
+%     FitMLRates_Protocol1a(REP1_DATA_PATH, REP1_K_NON_RANDOM);
+%     FitMLRates_Protocol1a_RandomT(REP1_DATA_PATH, REP1_K_RANDOM);
+%     FitMLRates_Protocol1a(REP2_DATA_PATH, REP2_K_NON_RANDOM);
+%     FitMLRates_Protocol1a_RandomT(REP2_DATA_PATH, REP2_K_RANDOM);
     
     MLELam = K_GROUND_TRUTH;
     MLEFrac = F_GROUND_TRUTH;
     FitSites = sites;
-    GROUND_TRUTH_DATA_fp = 'DATA/GROUND_TRUTH_K.mat';
-    save(GROUND_TRUTH_DATA_fp,'FitSites','MLELam','MLEFrac');
+    GROUND_TRUTH_K_fp = 'DATA/GROUND_TRUTH_K.mat';
+    save(GROUND_TRUTH_K_fp,'FitSites','MLELam','MLEFrac');
     
-    REP1_K_NON_RANDOM_fig = strcat(OUT_FIG_DIR, 'REP1_K_NON_RANDOM.pdf');
-    heatmap(GROUND_TRUTH_DATA_fp, REP1_K_NON_RANDOM, REP1_K_NON_RANDOM_fig, order_of_magnitude);
+    label1 = 'log10(k) ground truth';
+    random_label1 = 'log10(k) rep1 random t';
+    random_label2 = 'log10(k) rep2 random t';
+    non_random_label1 = 'log10(k) rep1 non-random t';
+    non_random_label2 = 'log10(k) rep2 non-random t';
+%     REP1_K_NON_RANDOM_fig = strcat(OUT_FIG_DIR, 'REP1_K_NON_RANDOM.pdf');
+%     heatmap(GROUND_TRUTH_K_fp, REP1_K_NON_RANDOM, REP1_K_NON_RANDOM_fig, order_of_magnitude, label1, non_random_label1);
+%     
+%     REP2_K_NON_RANDOM_fig = strcat(OUT_FIG_DIR, 'REP2_K_NON_RANDOM.pdf');
+%     heatmap(GROUND_TRUTH_K_fp, REP2_K_NON_RANDOM, REP2_K_NON_RANDOM_fig, order_of_magnitude, label1, non_random_label2);
+%     
+%     REP1_K_RANDOM_fig = strcat(OUT_FIG_DIR, 'REP1_K_RANDOM.pdf');
+%     heatmap(GROUND_TRUTH_K_fp, REP1_K_RANDOM, REP1_K_RANDOM_fig, order_of_magnitude, label1, random_label1);
+%     
+%     REP2_K_RANDOM_fig = strcat(OUT_FIG_DIR, 'REP2_K_RANDOM.pdf');
+%     heatmap(GROUND_TRUTH_K_fp, REP2_K_RANDOM, REP2_K_RANDOM_fig, order_of_magnitude, label1, random_label2);
     
-    REP2_K_NON_RANDOM_fig = strcat(OUT_FIG_DIR, 'REP2_K_NON_RANDOM.pdf');
-    heatmap(GROUND_TRUTH_DATA_fp, REP2_K_NON_RANDOM, REP2_K_NON_RANDOM_fig, order_of_magnitude);
     
-    REP1_K_RANDOM_fig = strcat(OUT_FIG_DIR, 'REP1_K_RANDOM.pdf');
-    heatmap(GROUND_TRUTH_DATA_fp, REP1_K_RANDOM, REP1_K_RANDOM_fig, order_of_magnitude);
+    REP1_K_RANDOM_DEPTH_fig = strcat(OUT_FIG_DIR, 'REP1_K_RANDOM_DEPTH.pdf');
+    plot_k_estimation_with_read_depth(GROUND_TRUTH_K_fp, REP1_K_RANDOM, REP1_DATA_PATH, REP1_K_RANDOM_DEPTH_fig, label1, random_label1);
     
-    REP2_K_RANDOM_fig = strcat(OUT_FIG_DIR, 'REP2_K_RANDOM.pdf');
-    heatmap(GROUND_TRUTH_DATA_fp, REP2_K_RANDOM, REP2_K_RANDOM_fig, order_of_magnitude);
+    REP2_K_RANDOM_DEPTH_fig = strcat(OUT_FIG_DIR, 'REP2_K_RANDOM_DEPTH.pdf');
+    plot_k_estimation_with_read_depth(GROUND_TRUTH_K_fp, REP2_K_RANDOM, REP2_DATA_PATH, REP2_K_RANDOM_DEPTH_fig, label1, random_label2);
 end
 
