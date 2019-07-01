@@ -15,22 +15,23 @@ function plot_k_estimation_with_read_depth(fitfile1, fitfile2, read_file2, figur
     load(read_file2, 'AllDat', 'sites');
     [C2,ic,id]=intersect(sites, C);
     sz = 10;
-    MAX_DEPTH1 = 20;
-    MAX_DEPTH2 = 7;
     Read_Depth = sum(AllDat(ic, :, 1 : 2), 3);
-    Read_Depth(Read_Depth(:, 1) > MAX_DEPTH1, 1) = MAX_DEPTH1;
-    Read_Depth(Read_Depth(:, 2) > MAX_DEPTH2, 2) = MAX_DEPTH2;
-    Read_Depth(Read_Depth(:, 3) > MAX_DEPTH2, 3) = MAX_DEPTH2;
-    Read_Depth(Read_Depth(:, 4) > MAX_DEPTH2, 4) = MAX_DEPTH2;
-    Read_Depth(:, 1) = Read_Depth(:, 1)./MAX_DEPTH1;
-    Read_Depth(:, 2:4) = Read_Depth(:, 2:4)./MAX_DEPTH2;
-    Read_Depth = uint8(round(Read_Depth * 10.0));
     N_Times = size(Read_Depth, 2);
+    MAX_DEPTHS = ones(1, N_Times) * 7;
+    MAX_DEPTHS(1, 1) = 20;
+    for ii = 1: 4
+        Read_Depth(Read_Depth(:, ii) > MAX_DEPTHS(ii), ii) = MAX_DEPTHS(ii);
+    end
+    
+%     Read_Depth(:, ii) = Read_Depth(:, ii)./MAX_DEPTHS(ii); 
+%     Read_Depth = uint8(round(Read_Depth * 15.0));% Normalize into 0-15
     fig = figure(1);
+    ncols = ceil(sqrt(N_Times));
     for ii = 1 : N_Times
-        subplot(2, 2, ii);
-        scatter(K1,K2, sz, Read_Depth(:, ii), 'filled');
+        subplot(ncols, ncols, ii);
+        scatter(K1, K2, sz, Read_Depth(:, ii), 'filled');
         colorbar;
+        caxis([0, MAX_DEPTHS(1, ii)]);
         xlabel(label1);
         ylabel(label2);
         xlim([-2, 1]);

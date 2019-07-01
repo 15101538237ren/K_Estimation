@@ -25,6 +25,7 @@ function heatmap(fitfile1, fitfile2, figure_path, order_of_magnitude, label1, la
     
     LamArray=LamArray'/numel(C);
     CC=corrcoef(Rates1(ia),Rates2(ib));
+%     [RHO,PVAL] = corr(Rates1(ia),Rates2(ib),'Type','Spearman');
     lala=log10(lamgrid);
     fig = figure(1);
     

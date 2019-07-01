@@ -2,19 +2,19 @@ clear;
 clc;
 close all;
 
-order_of_magnitude =1; % The order of magnitude for which K difference can be considered as conservative.
+OFM = 0.5; % The order of magnitude for which K difference can be considered as conservative.
+p = 0.5; %probability of binomial distribution
 
 chr_size = 1;
-NSites= 60000; %number of sites to simulate
-ts=[0.5,1.5,4.5,16.5];
-random_ts = rand(NSites, 4) + ts - 0.5;
+NSites=60000; %number of sites to simulate
+ts=[0, 1, 2, 4, 8, 12, 16] + 0.5;
 N_Times= numel(ts);
+random_ts = rand(NSites, N_Times) + ts - 0.5; % Add random T when generates the data
 rs = RandStream('mlfg6331_64');%Create the random number stream for reproducibility.
-
 
 K_1_BASE_PATH = '../DATA/Repli_BS/K_RATES/1/';
 MERGED_DATA_PATH = '../DATA/Repli_BS/TMP/MERGED_DATA/';
-OUT_FIG_DIR = 'Figures/SYN_DATA_CONSERVATIVE_NON_RANDOM_OFM_1/';
+OUT_FIG_DIR = strcat('Figures/REPLICATE_K_CONSISTENCY_SYN_OFM_',num2str(round(OFM,1)),'_INCREASE_TIMEPOINTS/');
 if ~exist(OUT_FIG_DIR)
     mkdir(OUT_FIG_DIR);
 end
@@ -27,6 +27,7 @@ for i = 1 : chr_size
     fs=MLEFrac(ChooseSites,1); %assigning f values
     ks=MLELam(ChooseSites ,1); %assigning k values
 
+    Ps = zeros(N_Times, NSites);
     for ii=1: N_Times
         Ps(ii,:)=fs.*(1-exp(-ks.*random_ts(:, ii))); %probability array 
     end
@@ -36,7 +37,7 @@ for i = 1 : chr_size
     % The following two lines selected the reads only by the fitted sites
     [olps, ia, ib] = intersect(FitSites, sites);
     Fitted_dat_with_reads_info = sum(AllDat(ib, :, 1:2), 3);
-
+    
     %Fitted_dat_with_reads_info = sum(AllDat(:, :, 1:2), 3);
 
     %set the number of reads per site per timepoint. Possibly change this to
@@ -49,11 +50,15 @@ for i = 1 : chr_size
     All_Reads_rep1 = zeros(NSites, N_Times, 2);
     All_Reads_rep2 = zeros(NSites, N_Times, 2);
 
-    p = 0.5; %probability of binomial distribution
+    
     %Computing the Read data by probability
     for ii=1 : NSites
         for jj=1 : N_Times
-            Numreads = Sampled_data_with_reads_info(ii,jj);
+            if jj == 1
+                Numreads = Sampled_data_with_reads_info(ii,1);
+            else
+                Numreads = round(mean(Sampled_data_with_reads_info(ii,2:end)));
+            end
             MReads=sum(double(rand(Numreads, 1) < Ps(jj,ii)));
             UReads=Numreads-MReads;
             MR1 = binornd(MReads, p);
@@ -67,21 +72,24 @@ for i = 1 : chr_size
     end
     sites = FitSites(ChooseSites);
 
-    REP1_DATA_PATH = 'DATA/REP1.mat';
+    REP1_DATA_PATH = 'DATA/REP1.mat'; % Save mat data of rep1 and rep2
     AllDat = All_Reads_rep1;
     save(REP1_DATA_PATH,'AllDat','sites');
-
-    REP1_K_PATH = 'DATA/REP1_K.mat';
-    FitMLRates_Protocol1a(REP1_DATA_PATH, REP1_K_PATH);
-
+    
     REP2_DATA_PATH = 'DATA/REP2.mat';
     AllDat = All_Reads_rep2;
     save(REP2_DATA_PATH,'AllDat','sites');
-
-    REP2_K_PATH = 'DATA/REP2_K.mat';
-    FitMLRates_Protocol1a(REP2_DATA_PATH, REP2_K_PATH);
     
-    Figure_path = strcat(OUT_FIG_DIR, 'chr', num2str(i) , '.pdf');
-    heatmap(REP1_K_PATH, REP2_K_PATH, Figure_path, order_of_magnitude, 'log10(K) rep1', 'log10(K) rep2');
+    REP1_K_RANDOM = 'DATA/REP1_K_RANDOMT.mat';
+    REP2_K_RANDOM = 'DATA/REP2_K_RANDOMT.mat';
+    
+    %Infer K of rep1 by non-random t random t also for rep2
+    FitMLRates_Protocol1a_RandomT(REP1_DATA_PATH, REP1_K_RANDOM);
+    FitMLRates_Protocol1a_RandomT(REP2_DATA_PATH, REP2_K_RANDOM);
+    random_label1 = 'log10(k) rep1';
+    random_label2 = 'log10(k) rep2';
+    
+     K_RANDOM_fig = strcat(OUT_FIG_DIR, 'K_RANDOM.pdf');
+     heatmap(REP1_K_RANDOM, REP2_K_RANDOM, K_RANDOM_fig, OFM, random_label1, random_label2);
 end
 
